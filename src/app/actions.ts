@@ -21,7 +21,7 @@ export async function submitCheckInAction(formData: FormData) {
 
 export async function adminLoginAction(formData: FormData) {
   const passcode = String(formData.get("passcode") ?? "");
-  const adminPasscode = getEnvOrDefault("ADMIN_PASSCODE", "123456");
+  const adminPasscode = getEnvOrDefault("ADMIN_PASSCODE", "0944550550");
 
   if (passcode !== adminPasscode) {
     redirect("/admin/login?status=error&message=Sai+m%C3%A3+qu%E1%BA%A3n+tr%E1%BB%8B.");

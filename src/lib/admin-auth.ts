@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getEnvOrDefault } from "@/lib/env";
 
 const ADMIN_COOKIE_NAME = "diemdanh_admin";
-const DEFAULT_ADMIN_PASSCODE = "123456";
+const DEFAULT_ADMIN_PASSCODE = "0944550550";
 
 export async function requireAdminAuth() {
   const cookieStore = await cookies();
