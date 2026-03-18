@@ -43,7 +43,7 @@ export async function upsertAttendeeAction(formData: FormData) {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const organizationName = String(formData.get("organizationName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
-  const phoneNumber = normalizePhoneNumber(String(formData.get("phoneNumber") ?? ""));
+  const phoneNumber = String(formData.get("phoneNumber") ?? "").trim();
   const isPresent = formData.get("isPresent") === "on";
   const checkedInAtValue = String(formData.get("checkedInAt") ?? "").trim();
 
@@ -142,7 +142,7 @@ export async function importCSVAction(formData: FormData) {
     const fullName = row.full_name?.trim();
     const organizationName = row.organization_name?.trim() || '';
     const email = row.email?.trim();
-    const phoneNumber = normalizePhoneNumber(row.phone_number?.trim());
+    const phoneNumber = row.phone_number?.trim();
 
     if (!fullName || !email || !phoneNumber) {
       errors.push(`Dòng ${i + 1}: Thiếu thông tin bắt buộc (tên, email, hoặc số điện thoại)`);
