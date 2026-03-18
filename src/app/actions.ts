@@ -179,3 +179,21 @@ export async function importCSVAction(formData: FormData) {
   revalidatePath("/admin/manage");
   redirect(`/admin/manage?status=success&message=Import+th%C3%A0nh+c%C3%B4ng+${attendees.length}+ng%C6%B0%E1%BB%9Di+tham+gia.`);
 }
+
+export async function clearAllAttendeesAction() {
+  await requireAdminAuth();
+  const supabase = createSupabaseAdminClient();
+
+  const { error } = await supabase
+    .from("attendees")
+    .delete()
+    .neq("id", "00000000-0000-0000-0000-000000000000"); // Xóa tất cả bằng cách dùng điều kiện luôn true
+
+  if (error) {
+    redirect(`/admin/manage?status=error&message=${encodeURIComponent('Lỗi khi xóa dữ liệu: ' + error.message)}`);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/manage");
+  redirect("/admin/manage?status=success&message=X%C3%B3a+t%E1%BA%A5t+c%E1%BA%A3+d%E1%BB%AF+li%E1%BB%87u+th%C3%A0nh+c%C3%B4ng.");
+}

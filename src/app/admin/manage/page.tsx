@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { deleteAttendeeAction, importCSVAction, upsertAttendeeAction } from "@/app/actions";
+import { clearAllAttendeesAction, deleteAttendeeAction, importCSVAction, upsertAttendeeAction } from "@/app/actions";
 import { requireAdminAuth } from "@/lib/admin-auth";
 import { getAttendees } from "@/lib/attendance";
 
@@ -97,6 +97,20 @@ export default async function ManagePage({ searchParams }: ManagePageProps) {
             </label>
             <button className="btn btn-secondary" type="submit">
               Import dữ liệu
+            </button>
+          </form>
+
+          <form action={clearAllAttendeesAction} className="stack" style={{ marginTop: 24, border: '1px solid #ff6b6b', padding: 16, borderRadius: 8 }}>
+            <h2 style={{ margin: 0, color: '#ff6b6b' }}>⚠️ Xóa tất cả dữ liệu</h2>
+            <p className="muted" style={{ margin: '8px 0', fontSize: '14px', color: '#ff6b6b' }}>
+              <strong>Cảnh báo:</strong> Hành động này sẽ xóa vĩnh viễn tất cả người tham gia và dữ liệu điểm danh. Không thể hoàn tác!
+            </p>
+            <button
+              className="btn"
+              type="submit"
+              style={{ backgroundColor: '#ff6b6b', color: 'white', border: 'none' }}
+            >
+              Xóa tất cả dữ liệu
             </button>
           </form>
         </aside>
