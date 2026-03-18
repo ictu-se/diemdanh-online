@@ -118,9 +118,10 @@ export async function importCSVAction(formData: FormData) {
 
   const headers = lines[0].split(',').map(h => h.trim());
   const expectedHeaders = ['full_name', 'organization_name', 'email', 'phone_number'];
+  const hasIsPresent = headers.includes('is_present');
 
   if (!expectedHeaders.every(h => headers.includes(h))) {
-    redirect("/admin/manage?status=error&message=Header+CSV+ph%E1%BA%A3i+ch%E1%BB%A9a+c%C3%A1c+c%E1%BB%99t:+full_name,+organization_name,+email,+phone_number.");
+    redirect("/admin/manage?status=error&message=Header+CSV+ph%E1%BA%A3i+ch%E1%BB%A9a+c%C3%A1c+c%E1%BB%99t:+full_name,+organization_name,+email,+phone_number.+(is_present+l%C3%A0+t%C3%B9y+ch%E1%BB%8Dn)");
   }
 
   const supabase = createSupabaseAdminClient();
@@ -143,6 +144,7 @@ export async function importCSVAction(formData: FormData) {
     const organizationName = row.organization_name?.trim() || '';
     const email = row.email?.trim();
     const phoneNumber = row.phone_number?.trim();
+    const isPresent = hasIsPresent ? (row.is_present?.trim().toLowerCase() === 'true') : false;
 
     if (!fullName || !email || !phoneNumber) {
       errors.push(`Dòng ${i + 1}: Thiếu thông tin bắt buộc (tên, email, hoặc số điện thoại)`);
@@ -154,8 +156,8 @@ export async function importCSVAction(formData: FormData) {
       organization_name: organizationName,
       email,
       phone_number: phoneNumber,
-      is_present: false,
-      checked_in_at: null,
+      is_present: isPresent,
+      checked_in_at: isPresent ? new Date().toISOString() : null,
     });
   }
 

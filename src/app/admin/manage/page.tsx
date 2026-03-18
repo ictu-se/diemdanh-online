@@ -87,6 +87,10 @@ export default async function ManagePage({ searchParams }: ManagePageProps) {
             <p className="muted" style={{ margin: '8px 0' }}>
               Tải file CSV mẫu: <a href="/sample-attendees.csv" download>sample-attendees.csv</a>
             </p>
+            <p className="muted" style={{ margin: '8px 0', fontSize: '14px' }}>
+              Cột bắt buộc: full_name, organization_name, email, phone_number<br/>
+              Cột tùy chọn: is_present (true/false, mặc định false)
+            </p>
             <label className="label">
               <span>Chọn file CSV</span>
               <input className="input" name="csvFile" type="file" accept=".csv" required />
