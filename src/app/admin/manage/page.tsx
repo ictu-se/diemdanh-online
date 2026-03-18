@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { deleteAttendeeAction, upsertAttendeeAction } from "@/app/actions";
+import { deleteAttendeeAction, importCSVAction, upsertAttendeeAction } from "@/app/actions";
 import { requireAdminAuth } from "@/lib/admin-auth";
 import { getAttendees } from "@/lib/attendance";
 
@@ -79,6 +79,20 @@ export default async function ManagePage({ searchParams }: ManagePageProps) {
             </label>
             <button className="btn btn-primary" type="submit">
               Lưu người tham gia
+            </button>
+          </form>
+
+          <form action={importCSVAction} className="stack" style={{ marginTop: 24 }}>
+            <h2 style={{ margin: 0 }}>Import từ CSV</h2>
+            <p className="muted" style={{ margin: '8px 0' }}>
+              Tải file CSV mẫu: <a href="/sample-attendees.csv" download>sample-attendees.csv</a>
+            </p>
+            <label className="label">
+              <span>Chọn file CSV</span>
+              <input className="input" name="csvFile" type="file" accept=".csv" required />
+            </label>
+            <button className="btn btn-secondary" type="submit">
+              Import dữ liệu
             </button>
           </form>
         </aside>
