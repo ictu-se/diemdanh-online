@@ -34,7 +34,7 @@ export default async function Home({ searchParams }: HomeProps) {
           </label>
 
           <button className="btn btn-primary public-button" type="submit">
-            Điểm danh ngay
+            Check-in
           </button>
         </form>
 

@@ -1,0 +1,31 @@
+
+> diemdanh-online@0.1.0 dev
+> next dev --webpack
+
+▲ Next.js 16.1.7 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.40:3000
+- Environments: .env
+
+✓ Starting...
+✓ Ready in 1401ms
+ GET / 200 in 2.6s (compile: 2.4s, render: 111ms)
+ GET / 200 in 63ms (compile: 7ms, render: 56ms)
+ GET /admin/manage 307 in 370ms (compile: 268ms, render: 102ms)
+ GET /admin/login 200 in 266ms (compile: 195ms, render: 70ms)
+ GET /admin 200 in 832ms (compile: 214ms, render: 618ms)
+ POST /admin/login 303 in 879ms (compile: 6ms, render: 872ms)
+ GET /admin/manage 200 in 159ms (compile: 10ms, render: 149ms)
+ POST /admin/manage 303 in 21ms (compile: 4ms, render: 17ms)
+ GET / 200 in 59ms (compile: 8ms, render: 51ms)
+ GET / 200 in 96ms (compile: 50ms, render: 46ms)
+ GET /admin/manage 200 in 673ms (compile: 9ms, render: 663ms)
+ GET /admin/manage?status=success&message=Import+th%C3%A0nh+c%C3%B4ng+192+ng%C6%B0%E1%BB%9Di+tham+gia. 200 in 327ms (compile: 3ms, render: 324ms)
+ POST /admin/manage 303 in 715ms (compile: 5ms, render: 710ms)
+ GET / 200 in 25ms (compile: 3ms, render: 22ms)
+ GET / 200 in 275ms (compile: 117ms, render: 158ms)
+ GET /admin/manage?status=success&message=Import+th%C3%A0nh+c%C3%B4ng+192+ng%C6%B0%E1%BB%9Di+tham+gia. 200 in 319ms (compile: 57ms, render: 262ms)
+ GET / 200 in 150ms (compile: 5ms, render: 146ms)
+ GET /admin/manage?status=success&message=Import+th%C3%A0nh+c%C3%B4ng+192+ng%C6%B0%E1%BB%9Di+tham+gia. 200 in 207ms (compile: 16ms, render: 190ms)
+ GET / 200 in 140ms (compile: 5ms, render: 136ms)
+ GET /admin/manage?status=success&message=Import+th%C3%A0nh+c%C3%B4ng+192+ng%C6%B0%E1%BB%9Di+tham+gia. 200 in 181ms (compile: 17ms, render: 163ms)

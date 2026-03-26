@@ -8,6 +8,55 @@ import { getEnvOrDefault } from "@/lib/env";
 import { normalizePhoneNumber } from "@/lib/phone";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 
+function parseCSVLine(line: string) {
+  const values: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    const next = line[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === "," && !inQuotes) {
+      values.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current.trim());
+  return values.map((value) => value.replace(/^"|"$/g, ""));
+}
+
+function normalizeCSVHeader(header: string) {
+  return header.replace(/^\uFEFF/, "").trim().toLowerCase();
+}
+
+function buildImportEmail(fullName: string, phoneNumber: string, rowNumber: number) {
+  const slug = fullName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/^\.+|\.+$/g, "");
+
+  return `${slug || `user.${rowNumber}`}.${phoneNumber.slice(-4)}@import.local`;
+}
+
 export async function submitCheckInAction(formData: FormData) {
   const phoneNumber = String(formData.get("phoneNumber") ?? "");
   const result = await checkInByPhoneNumber(phoneNumber);
@@ -57,7 +106,7 @@ export async function upsertAttendeeAction(formData: FormData) {
     email,
     phone_number: phoneNumber,
     is_present: isPresent,
-    checked_in_at: isPresent ? (checkedInAtValue || new Date().toISOString()) : null,
+    checked_in_at: isPresent ? checkedInAtValue || new Date().toISOString() : null,
   };
 
   if (id) {
@@ -105,56 +154,92 @@ export async function importCSVAction(formData: FormData) {
     redirect("/admin/manage?status=error&message=Vui+l%C3%B2ng+ch%E1%BB%8Dn+file+CSV+h%E1%BB%A3p+l%E1%BB%87.");
   }
 
-  if (!file.name.endsWith('.csv')) {
+  if (!file.name.toLowerCase().endsWith(".csv")) {
     redirect("/admin/manage?status=error&message=Ch%E1%BB%89+ch%E1%BA%A5p+nh%E1%BA%ADn+file+CSV.");
   }
 
   const csvText = await file.text();
-  const lines = csvText.trim().split('\n');
+  const lines = csvText
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   if (lines.length < 2) {
     redirect("/admin/manage?status=error&message=File+CSV+ph%E1%BA%A3i+c%C3%B3+%C3%ADt+nh%E1%BA%A5t+header+v%C3%A0+1+d%C3%B2ng+d%E1%BB%AF+li%E1%BB%87u.");
   }
 
-  const headers = lines[0].split(',').map(h => h.trim());
-  const expectedHeaders = ['full_name', 'organization_name', 'email', 'phone_number'];
-  const hasIsPresent = headers.includes('is_present');
+  const headers = parseCSVLine(lines[0]).map(normalizeCSVHeader);
+  const headerAliases: Record<string, string[]> = {
+    full_name: ["full_name", "ho va ten", "họ và tên", "ten", "tên"],
+    organization_name: ["organization_name", "don vi", "đơn vị", "ten don vi", "tên đơn vị", "sheet", "khoa", "lop", "lớp"],
+    email: ["email", "e-mail", "mail"],
+    phone_number: [
+      "phone_number",
+      "so dien thoai",
+      "số điện thoại",
+      "dien thoai",
+      "điện thoại",
+      "so dien thoai lien he",
+      "điện thoại liên hệ",
+    ],
+    is_present: ["is_present"],
+  };
 
-  if (!expectedHeaders.every(h => headers.includes(h))) {
-    redirect("/admin/manage?status=error&message=Header+CSV+ph%E1%BA%A3i+ch%E1%BB%A9a+c%C3%A1c+c%E1%BB%99t:+full_name,+organization_name,+email,+phone_number.+(is_present+l%C3%A0+t%C3%B9y+ch%E1%BB%8Dn)");
+  const findHeaderIndex = (field: string) =>
+    headers.findIndex((header) => headerAliases[field]?.includes(header));
+
+  const fullNameIndex = findHeaderIndex("full_name");
+  const organizationNameIndex = findHeaderIndex("organization_name");
+  const emailIndex = findHeaderIndex("email");
+  const phoneNumberIndex = findHeaderIndex("phone_number");
+  const isPresentIndex = findHeaderIndex("is_present");
+
+  if (fullNameIndex === -1 || phoneNumberIndex === -1) {
+    redirect("/admin/manage?status=error&message=File+CSV+c%E1%BA%A7n+c%C3%B3+%C3%ADt+nh%E1%BA%A5t+c%E1%BB%99t+h%E1%BB%8D+t%C3%AAn+v%C3%A0+s%E1%BB%91+%C4%91i%E1%BB%87n+tho%E1%BA%A1i.+C%C3%B3+th%E1%BB%83+d%C3%B9ng+header+ki%E1%BB%83u+full_name%2C+phone_number+ho%E1%BA%B7c+H%E1%BB%8D+v%C3%A0+t%C3%AAn%2C+S%E1%BB%91+%C4%91i%E1%BB%87n+tho%E1%BA%A1i.");
   }
 
   const supabase = createSupabaseAdminClient();
-  const attendees = [];
-  const errors = [];
+  const attendees: Array<{
+    full_name: string;
+    organization_name: string;
+    email: string;
+    phone_number: string;
+    is_present: boolean;
+    checked_in_at: string | null;
+  }> = [];
+  const errors: string[] = [];
+  const seenPhoneNumbers = new Set<string>();
 
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, '')); // Remove quotes if any
-    if (values.length !== headers.length) {
+  for (let i = 1; i < lines.length; i += 1) {
+    const values = parseCSVLine(lines[i]);
+    if (values.length < headers.length) {
       errors.push(`Dòng ${i + 1}: Số cột không khớp`);
       continue;
     }
 
-    const row: any = {};
-    headers.forEach((header, index) => {
-      row[header] = values[index];
-    });
+    const fullName = values[fullNameIndex]?.trim();
+    const organizationName = organizationNameIndex === -1 ? "" : values[organizationNameIndex]?.trim() || "";
+    const rawEmail = emailIndex === -1 ? "" : values[emailIndex]?.trim();
+    const phoneNumber = normalizePhoneNumber(values[phoneNumberIndex] ?? "");
+    const isPresentValue = isPresentIndex === -1 ? "" : values[isPresentIndex]?.trim().toLowerCase();
+    const isPresent = isPresentValue === "true" || isPresentValue === "1" || isPresentValue === "x";
 
-    const fullName = row.full_name?.trim();
-    const organizationName = row.organization_name?.trim() || '';
-    const email = row.email?.trim();
-    const phoneNumber = row.phone_number?.trim();
-    const isPresent = hasIsPresent ? (row.is_present?.trim().toLowerCase() === 'true') : false;
-
-    if (!fullName || !email || !phoneNumber) {
-      errors.push(`Dòng ${i + 1}: Thiếu thông tin bắt buộc (tên, email, hoặc số điện thoại)`);
+    if (!fullName || !phoneNumber) {
+      errors.push(`Dòng ${i + 1}: Thiếu họ tên hoặc số điện thoại`);
       continue;
     }
+
+    if (seenPhoneNumbers.has(phoneNumber)) {
+      continue;
+    }
+    seenPhoneNumbers.add(phoneNumber);
 
     attendees.push({
       full_name: fullName,
       organization_name: organizationName,
-      email,
+      email: rawEmail || buildImportEmail(fullName, phoneNumber, i + 1),
       phone_number: phoneNumber,
       is_present: isPresent,
       checked_in_at: isPresent ? new Date().toISOString() : null,
@@ -162,17 +247,20 @@ export async function importCSVAction(formData: FormData) {
   }
 
   if (errors.length > 0) {
-    redirect(`/admin/manage?status=error&message=${encodeURIComponent('Lỗi trong file CSV:\n' + errors.join('\n'))}`);
+    redirect(`/admin/manage?status=error&message=${encodeURIComponent(`Lỗi trong file CSV:\n${errors.join("\n")}`)}`);
   }
 
   if (attendees.length === 0) {
     redirect("/admin/manage?status=error&message=Kh%C3%B4ng+c%C3%B3+d%E1%BB%AF+li%E1%BB%87u+h%E1%BB%A3p+l%E1%BB%87+%C4%91%E1%BB%83+import.");
   }
 
-  const { error } = await supabase.from("attendees").insert(attendees);
+  const { error } = await supabase.from("attendees").upsert(attendees, {
+    onConflict: "phone_number",
+    ignoreDuplicates: false,
+  });
 
   if (error) {
-    redirect(`/admin/manage?status=error&message=${encodeURIComponent('Lỗi khi import: ' + error.message)}`);
+    redirect(`/admin/manage?status=error&message=${encodeURIComponent(`Lỗi khi import: ${error.message}`)}`);
   }
 
   revalidatePath("/admin");
@@ -187,10 +275,10 @@ export async function clearAllAttendeesAction() {
   const { error } = await supabase
     .from("attendees")
     .delete()
-    .neq("id", "00000000-0000-0000-0000-000000000000"); // Xóa tất cả bằng cách dùng điều kiện luôn true
+    .neq("id", "00000000-0000-0000-0000-000000000000");
 
   if (error) {
-    redirect(`/admin/manage?status=error&message=${encodeURIComponent('Lỗi khi xóa dữ liệu: ' + error.message)}`);
+    redirect(`/admin/manage?status=error&message=${encodeURIComponent(`Lỗi khi xóa dữ liệu: ${error.message}`)}`);
   }
 
   revalidatePath("/admin");
